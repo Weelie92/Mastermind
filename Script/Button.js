@@ -27,6 +27,10 @@ function TColorButtons(newPos, index) {
     return pos;
   };
 
+  this.getIndex = function () {
+    return index;
+  };
+
   this.isMouseOver = function (aPos) {
     const delta = Math.sqrt(
       Math.pow(aPos.x - pos.x - spi.w / 1.5, 2) + Math.pow(aPos.y - pos.y - spi.h / 1.5, 2),
