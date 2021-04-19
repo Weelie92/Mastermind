@@ -222,3 +222,5 @@ snapPositions.push([]);
 for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorPicker)) {
   snapPositions[10].push(aPos);
 }
+
+//hei på deeeeeeeg
