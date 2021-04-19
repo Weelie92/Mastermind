@@ -1,5 +1,3 @@
-"use strict";
-
 function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
   const sheet = aSheet;
   const spi = aSpriteInfo;
@@ -7,34 +5,44 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
   let spIndex = aIndex;
   const row = aRow;
   let round = 0;
-  const scale = {x: 1, y: 1};
+  const scale = { x: 1, y: 1 };
 
-  if(spi.gap === undefined){
+  if (spi.gap === undefined) {
     spi.gap = 0;
   }
-  if(spi.loop === undefined){
+  if (spi.loop === undefined) {
     spi.loop = 0;
   }
-  if(spi.speed === undefined){
+  if (spi.speed === undefined) {
     spi.speed = 1;
   }
-  if(spi.alpha === undefined){
+  if (spi.alpha === undefined) {
     spi.alpha = 1;
   }
 
   this.draw = function () {
     const index = Math.floor(spIndex);
-    const x = spi.x + ((spi.w + spi.gap) * index);
-    const y = spi.y + (spi.h * row);
+    const x = spi.x + (spi.w + spi.gap) * index;
+    const y = spi.y + spi.h * row;
     const oldAlpha = ctx.globalAlpha;
     ctx.globalAlpha = spi.alpha;
-    ctx.drawImage(sheet, x , y, spi.w, spi.h, pos.x, pos.y,  Math.floor(spi.w * scale.x), Math.floor(spi.h * scale.y));
+    ctx.drawImage(
+      sheet,
+      x,
+      y,
+      spi.w,
+      spi.h,
+      pos.x,
+      pos.y,
+      Math.floor(spi.w * scale.x),
+      Math.floor(spi.h * scale.y),
+    );
     ctx.globalAlpha = oldAlpha;
-    if ((round < spi.loop) || (spi.loop < 0)) {
+    if (round < spi.loop || spi.loop < 0) {
       spIndex += spi.speed;
       if (spIndex >= spi.count) {
         spIndex = 0;
-        if(spi.loop > 0) {
+        if (spi.loop > 0) {
           round++;
         }
       }
@@ -46,7 +54,7 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
     spIndex = aIndex;
   };
 
-  this.getIndex = function(){
+  this.getIndex = function () {
     return spIndex;
   };
 
@@ -61,29 +69,28 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
     }
   };
 
-  this.setScale = function(aScale){
+  this.setScale = function (aScale) {
     scale.x = aScale.x;
     scale.y = aScale.y;
   };
 
   this.setVisible = function (aVisible) {
-    if(aVisible) {
+    if (aVisible) {
       spi.alpha = 1;
-    }else{
+    } else {
       spi.alpha = 0;
     }
   };
 
-  this.setAlpha = function (aAlpha){
+  this.setAlpha = function (aAlpha) {
     spi.alpha = aAlpha;
   };
 
-  this.getSpriteInfo = function(){
+  this.getSpriteInfo = function () {
     return spi;
   };
 
-  this.getPos = function(){
+  this.getPos = function () {
     return pos;
-  }
-
+  };
 }
