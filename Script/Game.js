@@ -24,7 +24,7 @@ const MastermindBoard = {
     Blue: { x: 380, y: 179 },
     Brown: { x: 380, y: 248 },
     Green: { x: 380, y: 314 },
-    Orange: { x: 378, y: 378 },
+    Orange: { x: 378, y: 379 },
     Red: { x: 380, y: 448 },
     White: { x: 380, y: 513 },
     Yellow: { x: 380, y: 581 },
@@ -130,9 +130,22 @@ function newGame() {
 function drawGame() {
   ctx.clearRect(0, 0, cvs.width, cvs.height);
   board.draw();
+
+  colorButtonGuess.forEach((e) => {
+    e.forEach((a) => {
+      if (a) {
+        a.draw();
+      }
+    });
+  });
+
   colorButtons.forEach((e) => {
     e.draw();
   });
+
+  if (currentButton) {
+    currentButton.draw();
+  }
 }
 
 function setMousePos(aEvent) {
@@ -147,6 +160,16 @@ function cvsMouseMove(aEvent) {
   if (!isDragging) {
     cvs.style.cursor = '';
     currentButton = null;
+
+    colorButtonGuess.forEach((e) => {
+      e.forEach((a) => {
+        if (a !== null && a.isMouseOver(mousePos)) {
+          currentButton = a;
+          cvs.style.cursor = 'grab';
+        }
+      });
+    });
+
     for (let i = 0; i < colorButtons.length; i++) {
       if (colorButtons[i].isMouseOver(mousePos)) {
         cvs.style.cursor = 'grab';
@@ -167,10 +190,27 @@ function cvsMouseDown() {
     }
   }
 
-  if (currentButton) {
-    //currentButton = new TColorButtons(currentButton.getPos(), currentButton.getIndex());
+  if (currentButton && mousePos.x > cvs.width - 100) {
+    currentButton = new TColorButtons(currentButton.getPos(), currentButton.getIndex());
+    currentButton.startDrag();
+    cvs.style.cursor = 'grabbing';
+    isDragging = true;
+  } else if (currentButton !== null) {
+    for (let i = 0; i < 10; i += 1) {
+      for (let j = 0; j < 4; j += 1) {
+        if (
+          currentButton.getPos().x < snapPositions[i][j].x + MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().x > snapPositions[i][j].x - MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().y < snapPositions[i][j].y + MastermindSheet.ColorPicker.h &&
+          currentButton.getPos().y > snapPositions[i][j].y - MastermindSheet.ColorPicker.h
+        ) {
+          console.log('YEPP');
 
-    currentButton.startDrag(mousePos);
+          colorButtonGuess[i][j] = null;
+        }
+      }
+    }
+    currentButton.startDrag();
     cvs.style.cursor = 'grabbing';
     isDragging = true;
   }
@@ -178,7 +218,20 @@ function cvsMouseDown() {
 
 function cvsMouseUp() {
   if (currentButton) {
-    currentButton.drop(); //FJERNE
+    currentButton.drop();
+    for (let i = 0; i < 10; i += 1) {
+      for (let j = 0; j < 4; j += 1) {
+        if (
+          currentButton.getPos().x < snapPositions[i][j].x + MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().x > snapPositions[i][j].x - MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().y < snapPositions[i][j].y + MastermindSheet.ColorPicker.h &&
+          currentButton.getPos().y > snapPositions[i][j].y - MastermindSheet.ColorPicker.h
+        ) {
+          console.log('YEPP');
+          colorButtonGuess[i][j] = currentButton;
+        }
+      }
+    }
     currentButton = null;
     cvs.style.cursor = 'grab';
     isDragging = false;
@@ -212,13 +265,17 @@ let currentButton = null;
 
 for (let i = 0; i < 8; i++) {
   const colorPickerPos = Object.values(MastermindBoard.ColorPicker);
-  colorButtons[i] = new TColorButtons(colorPickerPos[i], i);
+
+  colorButtons[i] = new TColorButtons({ ...colorPickerPos[i] }, i);
+}
+
+for (let i = 0; i < 10; i++) {
+  colorButtonGuess.push([]);
+  for (let j = 0; j < 4; j++) {
+    colorButtonGuess[i].push(null);
+  }
 }
 
 for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorAnswer)) {
   snapPositions.push(aPos);
-}
-snapPositions.push([]);
-for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorPicker)) {
-  snapPositions[10].push(aPos);
 }
