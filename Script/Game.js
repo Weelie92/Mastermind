@@ -130,6 +130,9 @@ function newGame() {
 function drawGame() {
   ctx.clearRect(0, 0, cvs.width, cvs.height);
   board.draw();
+  colorButtons.forEach((e) => {
+    e.draw();
+  });
 }
 
 function setMousePos(aEvent) {
@@ -139,20 +142,51 @@ function setMousePos(aEvent) {
 }
 
 function cvsMouseMove(aEvent) {
-  // Mouse move over canvas
   setMousePos(aEvent);
+
+  if (!isDragging) {
+    cvs.style.cursor = '';
+    currentButton = null;
+    for (let i = 0; i < colorButtons.length; i++) {
+      if (colorButtons[i].isMouseOver(mousePos)) {
+        cvs.style.cursor = 'grab';
+        currentButton = colorButtons[i];
+        return;
+      }
+    }
+  } else if (currentButton) {
+    currentButton.dragging(mousePos);
+    drawGame();
+  }
 }
 
 function cvsMouseDown() {
-  // Mouse button down in canvas
+  for (let i = 0; i < colorButtons.length; i++) {
+    if (colorButtons[i].isMouseOver(mousePos)) {
+      console.log(colorButtons[i].getPos());
+    }
+  }
+
+  if (currentButton) {
+    //currentButton = new TColorButtons(currentButton.getPos(), currentButton.getIndex());
+
+    currentButton.startDrag(mousePos);
+    cvs.style.cursor = 'grabbing';
+    isDragging = true;
+  }
 }
 
 function cvsMouseUp() {
-  // Mouse button up in canvas
+  if (currentButton) {
+    currentButton.drop(); //FJERNE
+    currentButton = null;
+    cvs.style.cursor = 'grab';
+    isDragging = false;
+    drawGame();
+  }
 }
 
 function loadGame() {
-  // Sprite sheet is loaded and game can start!
   cvs.width = MastermindSheet.Board.w;
   cvs.height = MastermindSheet.Board.h;
   board = new TSprite(imgSheet, MastermindSheet.Board, { x: 0, y: 0 });
@@ -168,3 +202,23 @@ cvs.addEventListener('mousemove', cvsMouseMove);
 cvs.addEventListener('mousedown', cvsMouseDown);
 cvs.addEventListener('mouseup', cvsMouseUp);
 document.addEventListener('contextmenu', (aEvent) => aEvent.preventDefault());
+
+const colorButtons = [];
+const colorButtonGuess = [];
+const snapPositions = [];
+
+let isDragging = false;
+let currentButton = null;
+
+for (let i = 0; i < 8; i++) {
+  const colorPickerPos = Object.values(MastermindBoard.ColorPicker);
+  colorButtons[i] = new TColorButtons(colorPickerPos[i], i);
+}
+
+for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorAnswer)) {
+  snapPositions.push(aPos);
+}
+snapPositions.push([]);
+for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorPicker)) {
+  snapPositions[10].push(aPos);
+}

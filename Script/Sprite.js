@@ -1,7 +1,7 @@
 function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
   const sheet = aSheet;
   const spi = aSpriteInfo;
-  const pos = aPos;
+  let pos = aPos;
   let spIndex = aIndex;
   const row = aRow;
   let round = 0;
@@ -92,5 +92,9 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
 
   this.getPos = function () {
     return pos;
+  };
+
+  this.setPos = function (aPos) {
+    pos = aPos;
   };
 }
