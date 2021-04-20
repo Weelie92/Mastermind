@@ -72,20 +72,16 @@ function TColorButtons(newPos, index) {
   function checkSnapping() {
     const snap = 25;
 
-    for (let i = 0; i < snapPositions.length; i++) {
-      for (let j = 0; j < snapPositions[i].length; j++) {
-        const snapPos = snapPositions[i][j];
+    for (let i = 0; i < snapPositions[roundCounter].length; i++) {
+      const snapPos = snapPositions[roundCounter][i];
 
-        const delta = Math.sqrt(
-          Math.pow(snapPos.x - pos.x, 2) + Math.pow(snapPos.y - pos.y, 2),
-        );
+      const delta = Math.sqrt(Math.pow(snapPos.x - pos.x, 2) + Math.pow(snapPos.y - pos.y, 2));
 
-        if (delta <= snap) {
-          pos.x = snapPos.x;
-          pos.y = snapPos.y;
+      if (delta <= snap) {
+        pos.x = snapPos.x;
+        pos.y = snapPos.y;
 
-          return true;
-        }
+        return true;
       }
     }
   }
