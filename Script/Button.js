@@ -1,7 +1,8 @@
 function TColorButtons(newPos, index) {
-  let pos = newPos;
-  let deltaPos = new TPosition(100, 100);
-  const initPos = pos;
+  let pos = { ...newPos };
+  let deltaPos = new TPosition(0, 0);
+  let startDrag = false;
+  let initPos = pos;
   const radius = 15;
   const spi = MastermindSheet.ColorPicker;
   const sp = new TSprite(imgSheet, spi, pos, index);
@@ -38,13 +39,18 @@ function TColorButtons(newPos, index) {
     return delta <= radius;
   };
 
-  this.startDrag = function (aPos) {
-    pos = new TPosition(aPos.x, aPos.y);
-    deltaPos.x = pos.x - initPos.x;
-    deltaPos.y = pos.y - initPos.y;
+  this.startDrag = function () {
+    startDrag = true;
   };
 
   this.dragging = function (aPos) {
+    if (startDrag) {
+      pos = new TPosition(aPos.x, aPos.y);
+      deltaPos.x = pos.x - initPos.x;
+      deltaPos.y = pos.y - initPos.y;
+      startDrag = false;
+    }
+
     pos.x = aPos.x - deltaPos.x;
     pos.y = aPos.y - deltaPos.y;
     sp.setPos(pos);
@@ -55,25 +61,27 @@ function TColorButtons(newPos, index) {
     if (checkSnapping()) {
       initPos.x = pos.x;
       initPos.y = pos.y;
+    } else {
+      initPos = { ...newPos };
+      deltaPos = new TPosition(0, 0);
+      pos = { ...newPos };
+      sp.setPos({ ...newPos });
     }
   };
 
   function checkSnapping() {
     const snap = 25;
 
-    for (let i = 0; i < snapPositions.length; i++) {
-      for (let j = 0; j < 4; j++) {
-        const snapPos = snapPositions[i][j];
+    for (let i = 0; i < snapPositions[roundCounter].length; i++) {
+      const snapPos = snapPositions[roundCounter][i];
 
-        const delta = Math.sqrt(
-          Math.pow(snapPos.x - pos.x, 2) + Math.pow(snapPos.y - pos.y, 2),
-        );
+      const delta = Math.sqrt(Math.pow(snapPos.x - pos.x, 2) + Math.pow(snapPos.y - pos.y, 2));
 
-        if (delta <= snap) {
-          pos.x = snapPos.x;
-          pos.y = snapPos.y;
-          return true;
-        }
+      if (delta <= snap) {
+        pos.x = snapPos.x;
+        pos.y = snapPos.y;
+
+        return true;
       }
     }
   }
