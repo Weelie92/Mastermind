@@ -11,6 +11,7 @@ const MastermindSheet = {
   PanelHideAnswer: { x: 0, y: 90, w: 186, h: 49, count: 1 },
   ColorPicker: { x: 0, y: 200, w: 34, h: 34, count: 8 },
   ColorHint: { x: 0, y: 250, w: 19, h: 18, count: 2 },
+  RoundPin: { x: 38, y: 250, w: 19, h: 18, count: 1 },
 };
 
 // Coordinates on the actual board!
@@ -19,6 +20,80 @@ const MastermindBoard = {
   ButtonCheckAnswer: { x: 275, y: 53 },
   ButtonCheat: { x: 5, y: 45 },
   PanelHideAnswer: { x: 84, y: 45 },
+  RoundPin: {
+    Row1: { x: 10, y: 597 },
+    Row2: { x: 10, y: 544 },
+    Row3: { x: 10, y: 491 },
+    Row4: { x: 10, y: 438 },
+    Row5: { x: 10, y: 385 },
+    Row6: { x: 10, y: 332 },
+    Row7: { x: 10, y: 279 },
+    Row8: { x: 10, y: 226 },
+    Row9: { x: 10, y: 173 },
+    Row10: { x: 10, y: 120 },
+  },
+  HintPin: {
+    Row1: [
+      { x: 300, y: 586 },
+      { x: 322, y: 586 },
+      { x: 300, y: 606 },
+      { x: 322, y: 606 },
+    ],
+    Row2: [
+      { x: 300, y: 533 },
+      { x: 322, y: 533 },
+      { x: 300, y: 553 },
+      { x: 322, y: 553 },
+    ],
+    Row3: [
+      { x: 300, y: 479 },
+      { x: 322, y: 479 },
+      { x: 300, y: 499 },
+      { x: 322, y: 499 },
+    ],
+    Row4: [
+      { x: 300, y: 425 },
+      { x: 322, y: 425 },
+      { x: 300, y: 445 },
+      { x: 322, y: 445 },
+    ],
+    Row5: [
+      { x: 300, y: 372 },
+      { x: 322, y: 372 },
+      { x: 300, y: 392 },
+      { x: 322, y: 392 },
+    ],
+    Row6: [
+      { x: 300, y: 318 },
+      { x: 322, y: 318 },
+      { x: 300, y: 338 },
+      { x: 322, y: 338 },
+    ],
+    Row7: [
+      { x: 300, y: 265 },
+      { x: 322, y: 265 },
+      { x: 300, y: 285 },
+      { x: 322, y: 285 },
+    ],
+    Row8: [
+      { x: 300, y: 211 },
+      { x: 322, y: 211 },
+      { x: 300, y: 231 },
+      { x: 322, y: 231 },
+    ],
+    Row9: [
+      { x: 300, y: 158 },
+      { x: 322, y: 158 },
+      { x: 300, y: 178 },
+      { x: 322, y: 178 },
+    ],
+    Row10: [
+      { x: 300, y: 105 },
+      { x: 322, y: 105 },
+      { x: 300, y: 125 },
+      { x: 322, y: 125 },
+    ],
+  },
   ColorPicker: {
     Black: { x: 380, y: 113 },
     Blue: { x: 380, y: 179 },
@@ -107,6 +182,11 @@ const imgSheet = new Image();
 const mousePos = new TPosition(0, 0);
 
 let board = null;
+let buttonCheckAnswer = null;
+let buttonNewGame = null;
+let buttonCheat = null;
+let roundPin = null;
+let hideAnswerPanel = null;
 
 //--------------------------------------------------------------------------------------------------------------------
 //------ Classes
@@ -116,20 +196,44 @@ let board = null;
 //------ Function and Events
 //--------------------------------------------------------------------------------------------------------------------
 function addLogText(aText) {
-  if (txtLog.innerHTML.length > 0) {
-    txtLog.innerHTML += NewLine;
-  }
-  txtLog.innerHTML += aText;
+  txtLog.innerHTML = aText + NewLine + txtLog.innerHTML;
 }
 
 function newGame() {
-  addLogText('New Game!');
+  addLogText(`New Game! Attempt ${newGameCounter}.`);
+  colorButtonAnswer.length = 0;
+  roundCounter = 0;
+  newGameCounter++;
+
+  colorButtonGuess.forEach((e) => {
+    e.forEach((a) => {
+      if (a) {
+        a.clearButtonGuess();
+      }
+    });
+  });
+
+  for (let i = 0; i < 4; i++) {
+    const colorButtonAnswerPos = Object.values(MastermindBoard.ComputerAnswer);
+
+    colorButtonAnswer.push(
+      new TColorButtons(
+        new TPosition(colorButtonAnswerPos[i].x, colorButtonAnswerPos[i].y),
+        Math.floor(Math.random() * 8),
+      ),
+    );
+  }
+
   drawGame();
 }
 
 function drawGame() {
   ctx.clearRect(0, 0, cvs.width, cvs.height);
   board.draw();
+  buttonCheckAnswer.draw();
+  buttonNewGame.draw();
+  buttonCheat.draw();
+  roundPin.draw();
 
   colorButtonGuess.forEach((e) => {
     e.forEach((a) => {
@@ -143,9 +247,20 @@ function drawGame() {
     e.draw();
   });
 
+  for (let i = 0; i < hintPin.length; i++) {
+    for (let j = 0; j < hintPin[i].length; j++) {
+      hintPin[i][j].draw();
+    }
+  }
+
+  colorButtonAnswer.forEach((e) => {
+    e.draw();
+  });
+
   if (currentButton) {
     currentButton.draw();
   }
+  hideAnswerPanel.draw();
 }
 
 function setMousePos(aEvent) {
@@ -158,7 +273,16 @@ function cvsMouseMove(aEvent) {
   setMousePos(aEvent);
 
   if (!isDragging) {
-    cvs.style.cursor = '';
+    if (
+      buttonCheckAnswer.isMouseOver(mousePos) ||
+      buttonNewGame.isMouseOver(mousePos) ||
+      buttonCheat.isMouseOver(mousePos)
+    ) {
+      cvs.style.cursor = 'pointer';
+    } else {
+      cvs.style.cursor = '';
+    }
+
     currentButton = null;
 
     colorButtonGuess.forEach((e) => {
@@ -184,10 +308,13 @@ function cvsMouseMove(aEvent) {
 }
 
 function cvsMouseDown() {
-  for (let i = 0; i < colorButtons.length; i++) {
-    if (colorButtons[i].isMouseOver(mousePos)) {
-      console.log(colorButtons[i].getPos());
-    }
+  console.log(mousePos);
+  if (buttonCheckAnswer.isMouseOver(mousePos)) {
+    buttonCheckAnswer.down();
+  } else if (buttonNewGame.isMouseOver(mousePos)) {
+    buttonNewGame.down();
+  } else if (buttonCheat.isMouseOver(mousePos)) {
+    buttonCheat.down();
   }
 
   if (currentButton && mousePos.x > cvs.width - 100) {
@@ -204,8 +331,6 @@ function cvsMouseDown() {
           currentButton.getPos().y < snapPositions[i][j].y + MastermindSheet.ColorPicker.h &&
           currentButton.getPos().y > snapPositions[i][j].y - MastermindSheet.ColorPicker.h
         ) {
-          console.log('YEPP');
-
           colorButtonGuess[i][j] = null;
         }
       }
@@ -214,9 +339,20 @@ function cvsMouseDown() {
     cvs.style.cursor = 'grabbing';
     isDragging = true;
   }
+  drawGame();
 }
 
 function cvsMouseUp() {
+  if (buttonCheckAnswer.isMouseOver(mousePos)) {
+    buttonCheckAnswer.up();
+    roundPin.nextRound();
+  } else if (buttonNewGame.isMouseOver(mousePos)) {
+    buttonNewGame.up();
+    roundPin.nextRound();
+  } else if (buttonCheat.isMouseOver(mousePos)) {
+    buttonCheat.up();
+  }
+
   if (currentButton) {
     currentButton.drop();
     for (let i = 0; i < 10; i += 1) {
@@ -227,7 +363,6 @@ function cvsMouseUp() {
           currentButton.getPos().y < snapPositions[i][j].y + MastermindSheet.ColorPicker.h &&
           currentButton.getPos().y > snapPositions[i][j].y - MastermindSheet.ColorPicker.h
         ) {
-          console.log('YEPP');
           colorButtonGuess[i][j] = currentButton;
         }
       }
@@ -243,6 +378,11 @@ function loadGame() {
   cvs.width = MastermindSheet.Board.w;
   cvs.height = MastermindSheet.Board.h;
   board = new TSprite(imgSheet, MastermindSheet.Board, { x: 0, y: 0 });
+  buttonCheckAnswer = new TButtonCheckAnswer();
+  buttonNewGame = new TButtonNewGame();
+  buttonCheat = new TButtonCheat();
+  roundPin = new TRoundPin();
+  hideAnswerPanel = new TPanelHideAnswer();
   newGame();
 }
 
@@ -258,15 +398,24 @@ document.addEventListener('contextmenu', (aEvent) => aEvent.preventDefault());
 
 const colorButtons = [];
 const colorButtonGuess = [];
+const colorButtonAnswer = [];
+const hintPin = [];
 const snapPositions = [];
+const hintPinPos = [];
 
 let isDragging = false;
 let currentButton = null;
+let roundCounter = 0;
+let newGameCounter = 1;
 
 for (let i = 0; i < 8; i++) {
   const colorPickerPos = Object.values(MastermindBoard.ColorPicker);
 
   colorButtons[i] = new TColorButtons({ ...colorPickerPos[i] }, i);
+}
+
+for (let i = 0; i < 10; i++) {
+  hintPin.push([]);
 }
 
 for (let i = 0; i < 10; i++) {
@@ -278,4 +427,10 @@ for (let i = 0; i < 10; i++) {
 
 for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorAnswer)) {
   snapPositions.push(aPos);
+}
+
+const pinPos = Object.values(MastermindBoard.RoundPin);
+
+for (const [aRow, aPos] of Object.entries(MastermindBoard.HintPin)) {
+  hintPinPos.push(aPos);
 }
