@@ -17,7 +17,6 @@ function TButtonCheckAnswer() {
       aEvent.y > pos.y + 6 &&
       aEvent.y < pos.y + spi.h + 6
     ) {
-      cvs.style.cursor = 'pointer';
       return true;
     }
   };
@@ -51,10 +50,14 @@ function TButtonCheckAnswer() {
   };
 
   function checkGuess() {
+    /* Keep track of perfect (correct color and position),
+    and correct (correct color but wrong position),
+    Index to keep track of the pin order */
     let perfect = 0;
     let correct = 0;
     let index = 0;
 
+    /* Check if guess and answer is perfect or correct, based on roundCounter */
     for (let i = 0; i < 4; i++) {
       const guess = colorButtonGuess[roundCounter][i].getIndex();
       const answer = colorButtonAnswer;
@@ -70,6 +73,7 @@ function TButtonCheckAnswer() {
       }
     }
 
+    /* Push a black pin into hintPin array for every perfect guess */
     for (let i = 0; i < perfect; i++) {
       hintPin[roundCounter].push(
         new THintPin(
@@ -77,10 +81,11 @@ function TButtonCheckAnswer() {
           1,
         ),
       );
-      console.log('PERFECT');
       index++;
     }
 
+    /* Same as above, but pushed a white pin in.
+    Wrong answer will result in a shorter hintPin array */
     for (let i = 0; i < correct; i++) {
       hintPin[roundCounter].push(
         new THintPin(
@@ -89,14 +94,15 @@ function TButtonCheckAnswer() {
         ),
       );
       index++;
-      console.log('CORRECT');
-    }
-    index = 0;
-    for (let i = 0; i < hintPin[roundCounter].length; i++) {
-      hintPin[roundCounter][i].draw();
-      console.log(i);
     }
 
+    index = 0;
+
+    for (let i = 0; i < hintPin[roundCounter].length; i++) {
+      hintPin[roundCounter][i].draw();
+    }
+
+    /* If all 4 guesses are correct, WIN! */
     if (perfect === 4) {
       alert('WINNER');
     }
@@ -126,14 +132,12 @@ function TButtonNewGame() {
 
   this.down = function () {
     sp.setIndex(1);
-    drawGame();
   };
 
   this.up = function () {
     hideAnswerPanel.setVisible(true);
     newGame();
     sp.setIndex(0);
-    drawGame();
   };
 }
 
@@ -160,13 +164,11 @@ function TButtonCheat() {
 
   this.down = function () {
     sp.setIndex(1);
-    sp.draw();
   };
 
   this.up = function () {
     sp.setIndex(0);
     hideAnswerPanel.setVisible(false);
-    sp.draw();
   };
 }
 
@@ -198,7 +200,6 @@ function THintPin(aPos, index) {
   const pos = aPos;
   const spi = MastermindSheet.ColorHint;
   const sp = new TSprite(imgSheet, spi, pos, index);
-  this.index = index;
 
   this.draw = function () {
     sp.draw();

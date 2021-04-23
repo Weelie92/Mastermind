@@ -8,6 +8,9 @@ function TColorButtons(newPos, index) {
   const sp = new TSprite(imgSheet, spi, pos, index);
 
   this.clearButtonGuess = function () {
+    /* Clear the guess array.
+    push 10 new arrays containing 4 nulls (for future guesses) */
+
     colorButtonGuess.length = 0;
 
     for (let i = 0; i < 10; i++) {
@@ -57,6 +60,7 @@ function TColorButtons(newPos, index) {
     checkSnapping();
   };
 
+  //Fiks noe skit her
   this.drop = function () {
     if (checkSnapping()) {
       initPos.x = pos.x;
@@ -70,12 +74,16 @@ function TColorButtons(newPos, index) {
   };
 
   function checkSnapping() {
+    /* Snaps into place if within 25px */
     const snap = 25;
 
+    /* Only snap guess position for current round */
     for (let i = 0; i < snapPositions[roundCounter].length; i++) {
       const snapPos = snapPositions[roundCounter][i];
 
       const delta = Math.sqrt(Math.pow(snapPos.x - pos.x, 2) + Math.pow(snapPos.y - pos.y, 2));
+
+      /* If button is within 25px, snap into position */
 
       if (delta <= snap) {
         pos.x = snapPos.x;
