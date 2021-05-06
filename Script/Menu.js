@@ -26,6 +26,7 @@ function TButtonCheckAnswer() {
   };
 
   this.up = function () {
+    //Checks if currentGuess is filled, if not, let the player know
     if (colorButtonGuess[roundCounter].includes(null)) {
       let missingGuesses = 0;
       colorButtonGuess[roundCounter].forEach((e) => {
@@ -57,20 +58,47 @@ function TButtonCheckAnswer() {
     let correct = 0;
     let index = 0;
 
-    /* Check if guess and answer is perfect or correct, based on roundCounter */
+    /* Add answer to a temporary answer variable */
+    tempAnswer.length = 0;
+    tempAnswer = { ...colorButtonAnswer };
+
     for (let i = 0; i < 4; i++) {
-      const guess = colorButtonGuess[roundCounter][i].getIndex();
-      const answer = colorButtonAnswer;
-      if (guess === answer[i].getIndex()) {
-        perfect++;
-      } else if (
-        guess === answer[0].getIndex() ||
-        guess === answer[1].getIndex() ||
-        guess === answer[2].getIndex() ||
-        guess === answer[3].getIndex()
+      /* Only true if tempAnswer is NOT null, and guess/answer is the same (color and position) */
+      if (
+        tempAnswer[i] !== null &&
+        colorButtonGuess[roundCounter][i].getIndex() === tempAnswer[i].getIndex()
       ) {
-        correct++;
+        perfect++;
+        /* Removes the correct answer from the temporary answer variable */
+        tempAnswer[i] = null;
+      } else {
+        for (let j = 0; j < 4; j++) {
+          /* Check if tempAnswer is NOT null. Check if guess can be found in any other answer position */
+          if (
+            tempAnswer[j] !== null &&
+            colorButtonGuess[roundCounter][i].getIndex() === tempAnswer[j].getIndex()
+          ) {
+            /* If guess can be found in any other answer position, check is said answer is a perfect match with its corresponding guess */
+            if (colorButtonGuess[roundCounter][j].getIndex() === tempAnswer[j].getIndex()) {
+              /* If a match is found, add it as perfect, and not correct. Set the answer to null */
+              perfect++;
+              tempAnswer[j] = null;
+              break;
+            } else {
+              /* If no perfect match is found, increase correct by one. */
+              correct++;
+              tempAnswer[j] = null;
+              break;
+            }
+          }
+        }
       }
+      /* Explanation:
+         1: If guess 1 match answer 1, perfect++ and remove said answer from tempAnswer. 
+         2: If guess 1 dont match answer 1, check if guess 1 match answer 2, 3 or 4
+         3: If guess 1 match answer 3, check if answer 3 match guess 3.
+         4: If guess 3 match answer 3, perfect++ and set answer 3 to null.
+         5: If guess 3 don't match answer 3, correct++ and set answer 3 to null. */
     }
 
     /* Push a black pin into hintPin array for every perfect guess */
@@ -81,6 +109,7 @@ function TButtonCheckAnswer() {
           1,
         ),
       );
+
       index++;
     }
 
@@ -93,10 +122,9 @@ function TButtonCheckAnswer() {
           0,
         ),
       );
+
       index++;
     }
-
-    index = 0;
 
     for (let i = 0; i < hintPin[roundCounter].length; i++) {
       hintPin[roundCounter][i].draw();
@@ -106,6 +134,10 @@ function TButtonCheckAnswer() {
     if (perfect === 4) {
       alert('WINNER');
     }
+
+    index = 0;
+    perfect = 0;
+    correct = 0;
   }
 }
 
@@ -186,6 +218,7 @@ function TRoundPin() {
     sp.setPos(new TPosition(aPos));
   };
 
+  //Fix this shit
   this.nextRound = function () {
     const pinPos = Object.values(MastermindBoard.RoundPin);
     const pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);

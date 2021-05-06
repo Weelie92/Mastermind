@@ -74,6 +74,10 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
     scale.y = aScale.y;
   };
 
+  this.getScale = function () {
+    return scale;
+  };
+
   this.setVisible = function (aVisible) {
     if (aVisible) {
       spi.alpha = 1;
