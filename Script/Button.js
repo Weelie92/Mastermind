@@ -4,10 +4,9 @@ function TColorButtons(newPos, index) {
   let startDrag = false;
   let initPos = pos;
   let isSnapped = false;
-  let time = 100;
-  let a;
 
-  let snapOnce = true;
+  let currentScale = { x: 1, y: 1 };
+  let currentScaleGrowth = 0;
 
   const radius = 15;
   const spi = MastermindSheet.ColorPicker;
@@ -44,7 +43,7 @@ function TColorButtons(newPos, index) {
     startDrag = true;
   };
 
-  this.dragging = function (aPos) {
+  this.dragging = async function (aPos) {
     if (startDrag) {
       move.play();
       pos = new TPosition(aPos.x, aPos.y);
@@ -60,7 +59,37 @@ function TColorButtons(newPos, index) {
   };
 
   this.setScale = function (aScale) {
-    sp.setScale(aScale);
+    currentScale = aScale;
+    sp.setScale(currentScale);
+  };
+
+  this.grow = async function () {
+    /* Only grow is button is not max scale */
+    if (currentScale.x !== 1) {
+      /* Move button 17 pixels to the right and down.
+      Over the grow period, move the x/y position back to it's original position.
+      This creates the illusion of the button growing from the middle */
+      pos.x += 17;
+      pos.y += 17;
+
+      for (let i = 0; i < 10; i++) {
+        pos.x -= 1.7;
+        pos.y -= 1.7;
+
+        /* += 0.1 did not work, as every button would grow back when i moved one, +=10 and / 100 works as intended. */
+        currentScaleGrowth += 10;
+        currentScale = {
+          x: currentScaleGrowth / 100,
+          y: currentScaleGrowth / 100,
+        };
+
+        this.setScale(currentScale);
+        drawGame();
+        await timer(20);
+      }
+    }
+
+    currentScaleGrowth = 0;
   };
 
   this.drop = function () {
@@ -73,15 +102,16 @@ function TColorButtons(newPos, index) {
       pos = { ...newPos };
       sp.setPos({ ...newPos });
     }
+
     snapOnce = true;
     drop.play();
   };
 
-  function checkSnapping() {
+  async function checkSnapping() {
     /* Snaps into place if within 25px */
     const snap = 25;
 
-    // Only snap guess position for current round
+    /* Only snap guess position for current round */
     for (let i = 0; i < snapPos[roundCounter].length; i++) {
       const snapPoss = snapPos[roundCounter][i];
 
@@ -89,13 +119,12 @@ function TColorButtons(newPos, index) {
         Math.pow(snapPoss.x - pos.x, 2) + Math.pow(snapPoss.y - pos.y, 2)
       );
 
-      // If button is within 25px, snap into position
+      /* If button is within 25px, snap into position */
 
       if (delta <= snap) {
-        a = new Date().getTime() + time;
-
         pos.x = snapPoss.x;
         pos.y = snapPoss.y;
+
         isSnapped = true;
         return true;
       } else {

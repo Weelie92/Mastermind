@@ -19,6 +19,7 @@
         text-align: center;
       }
     </style>
+    <link rel="stylesheet" href="style/stylesheet.css" />
   </head>
 
   <body>
@@ -29,8 +30,15 @@
       height="100px"
       width="100px"
       style="background-color: antiquewhite; border: 7px black solid"
-    ></canvas>
-    <h4>Press F12 to debug (Chrome and Firefox)</h4>
+    ></canvas
+    ><br />
+
+    <button id="fireworkButton" style="display: none" onclick="startFirework()">
+      Fireworks!
+    </button>
+    <p id="fireworkWarning" style="display: none">
+      Sending more than 1 firework will ruin performance
+    </p>
     <fieldset>
       <legend>Game Log</legend>
       <span id="txtLog"></span>
@@ -39,6 +47,7 @@
     <script src="Script/Sprite.js"></script>
     <script src="Script/Menu.js"></script>
     <script src="Script/Button.js"></script>
+    <script src="Script/Fireworks.js"></script>
     <script src="Script/Game.js"></script>
   </body>
 </html>

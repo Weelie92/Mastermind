@@ -1,3 +1,4 @@
+/* Sprite details */
 const MastermindSheet = {
   Board: { x: 320, y: 0, w: 441, h: 640, count: 1 },
   ButtonNewGame: { x: 0, y: 45, w: 160, h: 45, count: 2 },
@@ -9,7 +10,7 @@ const MastermindSheet = {
   RoundPin: { x: 38, y: 250, w: 19, h: 18, count: 1 },
 };
 
-// Coordinates on the actual board!
+/* Coordinates on the actual board! */
 const MastermindBoard = {
   ButtonNewGame: { x: 275, y: 5 },
   ButtonCheckAnswer: { x: 275, y: 53 },
@@ -169,6 +170,9 @@ const MastermindBoard = {
   ],
 };
 
+const GameStatus = { gameRunning: 0, gameOver: 1, gameWin: 2 };
+const FireworkType = { rocket: 0, fire: 1, effects: 2 };
+
 const NewLine = '<br />';
 const cvs = document.getElementById('cvs');
 const ctx = cvs.getContext('2d');
@@ -176,29 +180,71 @@ const txtLog = document.getElementById('txtLog');
 const imgSheet = new Image();
 const mousePos = new TPosition(0, 0);
 
+imgSheet.addEventListener('load', loadGame);
+imgSheet.src = 'SpriteSheet_MM.png';
+cvs.addEventListener('mousemove', cvsMouseMove);
+cvs.addEventListener('mousedown', cvsMouseDown);
+cvs.addEventListener('mouseup', cvsMouseUp);
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+const colorButtons = [];
+const colorButtonGuess = [];
+const colorButtonAnswer = [];
+const hintPin = [];
+const firework = [];
+const fireworkFire = [];
+const fireworkEffects = [];
+
 let board = null;
 let buttonCheckAnswer = null;
 let buttonNewGame = null;
 let buttonCheat = null;
 let roundPin = null;
 let hideAnswerPanel = null;
+let rocket = null;
 
-//--------------------------------------------------------------------------------------------------------------------
-// ------ Classes
-//--------------------------------------------------------------------------------------------------------------------
+/* Timer, when used with await, will cause the code to wait for x amount of milliseconds */
+const timer = (ms) => new Promise((res) => setTimeout(res, ms));
 
-//--------------------------------------------------------------------------------------------------------------------
-// ------ Function and Events
-//--------------------------------------------------------------------------------------------------------------------
+/* Sounds */
+const clock = new Audio('Sounds/clock.mp3');
+const move = new Audio('Sounds/move1.mp3');
+const drop = new Audio('Sounds/chessDrop.mp3');
+const woosh = new Audio('Sounds/woosh.mp3');
+const explosion = new Audio('Sounds/explosion.mp3');
+
+drop.volume = 0.5;
+clock.loop = true;
+
+/* Adds different positions */
+const snapPos = Object.values(MastermindBoard.ColorAnswer);
+const pinPos = Object.values(MastermindBoard.RoundPin);
+const hintPinPos = Object.values(MastermindBoard.HintPin);
+
+let isDragging = false;
+let gameMode = GameStatus.gameWin;
+let currentButton = null;
+let roundCounter = 0;
+let newGameCounter = 1;
+let tempAnswer = [];
+
 function addLogText(aText) {
   txtLog.innerHTML = aText + NewLine + txtLog.innerHTML;
 }
 
 function newGame() {
+  document
+    .getElementById('fireworkButton')
+    .setAttribute('style', 'display: none');
+  document
+    .getElementById('fireworkWarning')
+    .setAttribute('style', 'display: none');
   addLogText(`New Game! Attempt ${newGameCounter}.`);
   colorButtonAnswer.length = 0;
   roundCounter = 0;
   newGameCounter++;
+
+  gameMode = GameStatus.gameRunning;
 
   /* Using Object.values to add every ComputerAnswer x.y value to an array. */
   const colorButtonAnswerPos = Object.values(MastermindBoard.ComputerAnswer);
@@ -206,7 +252,8 @@ function newGame() {
   colorButtonGuess.length = 0;
 
   /* Clear the guess array.
-    push 10 new arrays containing 4 nulls (for future guesses) */
+  push 10 new arrays containing 4 nulls (for future guesses) */
+
   for (let i = 0; i < 10; i++) {
     const row = [];
 
@@ -266,11 +313,23 @@ function drawGame() {
     e.draw();
   });
 
+  hideAnswerPanel.draw();
+
   if (currentButton) {
     currentButton.draw();
   }
 
-  hideAnswerPanel.draw();
+  for (let i = 0; i < fireworkFire.length; i++) {
+    fireworkFire[i].draw();
+  }
+
+  for (let i = 0; i < firework.length; i++) {
+    firework[i].draw();
+  }
+
+  for (let i = 0; i < fireworkEffects.length; i++) {
+    fireworkEffects[i].draw();
+  }
 }
 
 function setMousePos(aEvent) {
@@ -282,37 +341,47 @@ function setMousePos(aEvent) {
 function cvsMouseMove(aEvent) {
   setMousePos(aEvent);
 
-  // If you're not dragging a button
+  /* If you're not dragging a button */
+
   if (!isDragging) {
-    if (
-      buttonCheckAnswer.isMouseOver(mousePos) ||
-      buttonNewGame.isMouseOver(mousePos) ||
-      buttonCheat.isMouseOver(mousePos)
-    ) {
+    if (buttonNewGame.isMouseOver(mousePos)) {
       cvs.style.cursor = 'pointer';
     } else {
       cvs.style.cursor = '';
     }
 
-    currentButton = null;
-
-    // Checks if there is a button in snap position (guesses) on said round
-    colorButtonGuess[roundCounter].forEach((a) => {
-      // If snap position is not null, and mouse is over a button, make currentbutton said button
-      if (a !== null && a.isMouseOver(mousePos)) {
-        currentButton = a;
-        cvs.style.cursor = 'grab';
+    if (gameMode === GameStatus.gameRunning) {
+      if (
+        buttonNewGame.isMouseOver(mousePos) ||
+        buttonCheckAnswer.isMouseOver(mousePos) ||
+        buttonCheat.isMouseOver(mousePos)
+      ) {
+        cvs.style.cursor = 'pointer';
+      } else {
+        cvs.style.cursor = '';
       }
-    });
 
-    // Checks which color button the mouse is over, and change currentButton to said button
-    for (let i = 0; i < colorButtons.length; i++) {
-      if (colorButtons[i].isMouseOver(mousePos)) {
-        cvs.style.cursor = 'grab';
-        currentButton = colorButtons[i];
+      currentButton = null;
+
+      /* Checks if there is a button in snap position (guesses) on said round */
+      colorButtonGuess[roundCounter].forEach((a) => {
+        /* If snap position is not null, and mouse is over a button, make currentbutton said button */
+        if (a !== null && a.isMouseOver(mousePos)) {
+          currentButton = a;
+          cvs.style.cursor = 'grab';
+        }
+      });
+
+      /* Checks which color button the mouse is over, and change currentButton to said button */
+      for (let i = 0; i < colorButtons.length; i++) {
+        if (colorButtons[i].isMouseOver(mousePos)) {
+          cvs.style.cursor = 'grab';
+          currentButton = colorButtons[i];
+        }
       }
     }
-    // If you're draggin a button
+
+    /* If you're dragging a button */
   } else if (currentButton) {
     currentButton.dragging(mousePos);
     drawGame();
@@ -320,95 +389,128 @@ function cvsMouseMove(aEvent) {
 }
 
 function cvsMouseDown() {
-  // Check which menu button mouse is over
-  if (buttonCheckAnswer.isMouseOver(mousePos)) {
-    buttonCheckAnswer.down();
-  } else if (buttonNewGame.isMouseOver(mousePos)) {
+  /* Check which menu button mouse is over */
+  if (buttonNewGame.isMouseOver(mousePos)) {
     buttonNewGame.down();
-  } else if (buttonCheat.isMouseOver(mousePos)) {
-    buttonCheat.down();
   }
 
-  // CHANGE?
-  // Check if currentButton is on the right of canvas (only true on colorButtons)
-  if (currentButton && mousePos.x > cvs.width - 100) {
-    // Set the scale of currentButton to 0, making it dissapear;
-    currentButton.setScale({ x: 0, y: 0 });
-
-    // Create a NEW button on top of the old one, and start dragging new button
-    currentButton = new TColorButtons(
-      currentButton.getPos(),
-      currentButton.getIndex()
-    );
-    currentButton.startDrag();
-    cvs.style.cursor = 'grabbing';
-    isDragging = true;
-  } else if (currentButton) {
-    // Check which button guess the mouse is over, replace snap position with null
-    for (let i = 0; i < 10; i += 1) {
-      for (let j = 0; j < 4; j += 1) {
-        if (
-          currentButton.getPos().x <
-            snapPos[i][j].x + MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().x >
-            snapPos[i][j].x - MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().y <
-            snapPos[i][j].y + MastermindSheet.ColorPicker.h &&
-          currentButton.getPos().y >
-            snapPos[i][j].y - MastermindSheet.ColorPicker.h
-        ) {
-          colorButtonGuess[i][j] = null;
-        }
-      }
+  /* Check if currentButton is on the right of canvas (only true on colorButtons) */
+  if (gameMode === GameStatus.gameRunning) {
+    if (buttonCheckAnswer.isMouseOver(mousePos)) {
+      buttonCheckAnswer.down();
+    } else if (buttonCheat.isMouseOver(mousePos)) {
+      buttonCheat.down();
     }
 
-    currentButton.startDrag();
-    cvs.style.cursor = 'grabbing';
-    isDragging = true;
+    if (currentButton && mousePos.x > cvs.width - 100) {
+      /* Set the scale of currentButton to 0, making it disappear */
+      currentButton.setScale({ x: 0, y: 0 });
+
+      /* Create a NEW button on top of the old one, and start dragging new button */
+      currentButton = new TColorButtons(
+        currentButton.getPos(),
+        currentButton.getIndex()
+      );
+
+      currentButton.startDrag();
+      cvs.style.cursor = 'grabbing';
+      isDragging = true;
+    } else if (currentButton) {
+      /* Check which button guess the mouse is over, replace snap position with null */
+      for (let i = 0; i < 10; i += 1) {
+        for (let j = 0; j < 4; j += 1) {
+          if (
+            currentButton.getPos().x <
+              snapPos[i][j].x + MastermindSheet.ColorPicker.w &&
+            currentButton.getPos().x >
+              snapPos[i][j].x - MastermindSheet.ColorPicker.w &&
+            currentButton.getPos().y <
+              snapPos[i][j].y + MastermindSheet.ColorPicker.h &&
+            currentButton.getPos().y >
+              snapPos[i][j].y - MastermindSheet.ColorPicker.h
+          ) {
+            colorButtonGuess[i][j] = null;
+          }
+        }
+      }
+
+      currentButton.startDrag();
+      cvs.style.cursor = 'grabbing';
+      isDragging = true;
+    }
   }
+
   drawGame();
 }
 
 function cvsMouseUp() {
-  if (buttonCheckAnswer.isMouseOver(mousePos)) {
-    buttonCheckAnswer.up();
-    roundPin.nextRound();
-  } else if (buttonNewGame.isMouseOver(mousePos)) {
+  if (buttonNewGame.isMouseOver(mousePos)) {
     buttonNewGame.up();
     roundPin.nextRound();
-  } else if (buttonCheat.isMouseOver(mousePos)) {
-    buttonCheat.up();
   }
 
-  if (currentButton) {
-    currentButton.drop();
+  if (gameMode === GameStatus.gameRunning) {
+    if (buttonCheckAnswer.isMouseOver(mousePos)) {
+      buttonCheckAnswer.up();
+      roundPin.nextRound();
+    } else if (buttonCheat.isMouseOver(mousePos)) {
+      buttonCheat.up();
+    }
 
-    // Place currentButton in snap position if snapping is true
-    for (let j = 0; j < 4; j += 1) {
-      if (
-        currentButton.getPos().x <
-          snapPos[roundCounter][j].x + MastermindSheet.ColorPicker.w &&
-        currentButton.getPos().x >
-          snapPos[roundCounter][j].x - MastermindSheet.ColorPicker.w &&
-        currentButton.getPos().y <
-          snapPos[roundCounter][j].y + MastermindSheet.ColorPicker.h &&
-        currentButton.getPos().y >
-          snapPos[roundCounter][j].y - MastermindSheet.ColorPicker.h
-      ) {
-        colorButtonGuess[roundCounter][j] = currentButton;
+    if (currentButton) {
+      currentButton.drop();
+
+      /* Place currentButton in snap position if snapping is true */
+      for (let j = 0; j < 4; j += 1) {
+        if (
+          currentButton.getPos().x <
+            snapPos[roundCounter][j].x + MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().x >
+            snapPos[roundCounter][j].x - MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().y <
+            snapPos[roundCounter][j].y + MastermindSheet.ColorPicker.h &&
+          currentButton.getPos().y >
+            snapPos[roundCounter][j].y - MastermindSheet.ColorPicker.h &&
+          currentButton.isSnapped()
+        ) {
+          colorButtonGuess[roundCounter][j] = currentButton;
+        }
       }
+
+      /* Set the scale of every color button back to 1 */
+      for (let i = 0; i < colorButtons.length; i++) {
+        colorButtons[i].grow();
+      }
+
+      currentButton = null;
+
+      cvs.style.cursor = 'grab';
+      isDragging = false;
+      drawGame();
     }
+  }
 
-    // Set the scale of every color button back to 1
-    for (let i = 0; i < colorButtons.length; i++) {
-      colorButtons[i].setScale({ x: 1, y: 1 });
-    }
+  buttonCheckAnswer.setIndex(0);
+  buttonNewGame.setIndex(0);
+  buttonCheat.setIndex(0);
+  drawGame();
+}
 
-    currentButton = null;
+async function startFirework() {
+  if (firework.length > 0) {
+    document
+      .getElementById('fireworkWarning')
+      .setAttribute('style', 'display: show');
+  } else {
+    rocket = new FireWorks(
+      new TPosition(Math.random() * 400, 610),
+      0,
+      FireworkType.rocket
+    );
+    woosh.play();
+    rocket.move();
 
-    cvs.style.cursor = 'grab';
-    isDragging = false;
-    drawGame();
+    firework.push(rocket);
   }
 }
 
@@ -425,54 +527,36 @@ function loadGame() {
   newGame();
 }
 
-//--------------------------------------------------------------------------------------------------------------------
-// ------ Main Code
-//--------------------------------------------------------------------------------------------------------------------
-imgSheet.addEventListener('load', loadGame);
-imgSheet.src = 'SpriteSheet_MM.png';
-cvs.addEventListener('mousemove', cvsMouseMove);
-cvs.addEventListener('mousedown', cvsMouseDown);
-cvs.addEventListener('mouseup', cvsMouseUp);
-document.addEventListener('contextmenu', (e) => e.preventDefault());
+function test() {
+  setInterval(() => {
+    for (let i = 0; i < fireworkEffects.length; i++) {
+      fireworkEffects[i].move();
+    }
+    for (let i = 0; i < firework.length; i++) {
+      firework[i].move();
+    }
+    for (let i = 0; i < fireworkFire.length; i++) {
+      fireworkFire[i].move();
+    }
+  }, 10);
+}
 
-const colorButtons = [];
-const colorButtonGuess = [];
-const colorButtonAnswer = [];
-const hintPin = [];
+test();
 
-// Adds different positions
-const snapPos = Object.values(MastermindBoard.ColorAnswer);
-const pinPos = Object.values(MastermindBoard.RoundPin);
-const hintPinPos = Object.values(MastermindBoard.HintPin);
-
-let isDragging = false;
-let currentButton = null;
-let roundCounter = 0;
-let newGameCounter = 1;
-let tempAnswer = [];
-
-// Sounds
-const clock = new Audio('Sounds/clock.mp3');
-const move = new Audio('Sounds/move1.mp3');
-const drop = new Audio('Sounds/chessDrop.mp3');
-
-drop.volume = 0.5;
-clock.loop = true;
-
-// Add the 8 different color buttons
+/* Add the 8 different color buttons */
 for (let i = 0; i < 8; i++) {
-  // Object.values adds the coordinates in MastermindBoard.ColorPicker to an array, allowing a loop to run through
+  /* Object.values adds the coordinates in MastermindBoard.ColorPicker to an array, allowing a loop to run through */
   const colorPickerPos = Object.values(MastermindBoard.ColorPicker);
 
   colorButtons[i] = new TColorButtons(colorPickerPos[i], i);
 }
 
-// Prepare 10 rows of hint pins
+/* Prepare 10 rows of hint pins */
 for (let i = 0; i < 10; i++) {
   hintPin.push([]);
 }
 
-// add 10 (rounds) arrays with 4 (guesses) nulls in each
+/* add 10 (rounds) arrays with 4 (guesses) nulls in each */
 for (let i = 0; i < 10; i++) {
   colorButtonGuess.push([]);
   for (let j = 0; j < 4; j++) {
