@@ -9,8 +9,6 @@ function TColorButtons(newPos, index) {
 
   let snapOnce = true;
 
-  //TEST END
-
   const radius = 15;
   const spi = MastermindSheet.ColorPicker;
   const sp = new TSprite(imgSheet, spi, pos, index);
@@ -33,7 +31,8 @@ function TColorButtons(newPos, index) {
 
   this.isMouseOver = function (aPos) {
     const delta = Math.sqrt(
-      Math.pow(aPos.x - pos.x - spi.w / 1.5, 2) + Math.pow(aPos.y - pos.y - spi.h / 1.5, 2),
+      Math.pow(aPos.x - pos.x - spi.w / 1.5, 2) +
+        Math.pow(aPos.y - pos.y - spi.h / 1.5, 2)
     );
     return delta <= radius;
   };
@@ -64,7 +63,6 @@ function TColorButtons(newPos, index) {
     sp.setScale(aScale);
   };
 
-  //Fiks noe skit her
   this.drop = function () {
     if (checkSnapping()) {
       initPos.x = pos.x;
@@ -83,15 +81,15 @@ function TColorButtons(newPos, index) {
     /* Snaps into place if within 25px */
     const snap = 25;
 
-    //Only snap guess position for current round
+    // Only snap guess position for current round
     for (let i = 0; i < snapPos[roundCounter].length; i++) {
       const snapPoss = snapPos[roundCounter][i];
 
       const delta = Math.sqrt(
-        Math.pow(snapPoss.x - pos.x, 2) + Math.pow(snapPoss.y - pos.y, 2),
+        Math.pow(snapPoss.x - pos.x, 2) + Math.pow(snapPoss.y - pos.y, 2)
       );
 
-      //If button is within 25px, snap into position
+      // If button is within 25px, snap into position
 
       if (delta <= snap) {
         a = new Date().getTime() + time;

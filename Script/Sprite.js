@@ -35,7 +35,7 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
       pos.x,
       pos.y,
       Math.floor(spi.w * scale.x),
-      Math.floor(spi.h * scale.y),
+      Math.floor(spi.h * scale.y)
     );
     ctx.globalAlpha = oldAlpha;
     if (round < spi.loop || spi.loop < 0) {

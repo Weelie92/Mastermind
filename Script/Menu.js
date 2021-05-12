@@ -1,7 +1,7 @@
 function TButtonCheckAnswer() {
   const pos = new TPosition(
     MastermindBoard.ButtonCheckAnswer.x,
-    MastermindBoard.ButtonCheckAnswer.y,
+    MastermindBoard.ButtonCheckAnswer.y
   );
   const spi = MastermindSheet.ButtonCheckAnswer;
   const sp = new TSprite(imgSheet, spi, pos);
@@ -26,7 +26,7 @@ function TButtonCheckAnswer() {
   };
 
   this.up = function () {
-    //Checks if currentGuess is filled, if not, let the player know
+    // Checks if currentGuess is filled, if not, let the player know
     if (colorButtonGuess[roundCounter].includes(null)) {
       let missingGuesses = 0;
       colorButtonGuess[roundCounter].forEach((e) => {
@@ -66,7 +66,8 @@ function TButtonCheckAnswer() {
       /* Only true if tempAnswer is NOT null, and guess/answer is the same (color and position) */
       if (
         tempAnswer[i] !== null &&
-        colorButtonGuess[roundCounter][i].getIndex() === tempAnswer[i].getIndex()
+        colorButtonGuess[roundCounter][i].getIndex() ===
+          tempAnswer[i].getIndex()
       ) {
         perfect++;
         /* Removes the correct answer from the temporary answer variable */
@@ -76,10 +77,14 @@ function TButtonCheckAnswer() {
           /* Check if tempAnswer is NOT null. Check if guess can be found in any other answer position */
           if (
             tempAnswer[j] !== null &&
-            colorButtonGuess[roundCounter][i].getIndex() === tempAnswer[j].getIndex()
+            colorButtonGuess[roundCounter][i].getIndex() ===
+              tempAnswer[j].getIndex()
           ) {
             /* If guess can be found in any other answer position, check is said answer is a perfect match with its corresponding guess */
-            if (colorButtonGuess[roundCounter][j].getIndex() === tempAnswer[j].getIndex()) {
+            if (
+              colorButtonGuess[roundCounter][j].getIndex() ===
+              tempAnswer[j].getIndex()
+            ) {
               /* If a match is found, add it as perfect, and not correct. Set the answer to null */
               perfect++;
               tempAnswer[j] = null;
@@ -105,9 +110,12 @@ function TButtonCheckAnswer() {
     for (let i = 0; i < perfect; i++) {
       hintPin[roundCounter].push(
         new THintPin(
-          new TPosition(hintPinPos[roundCounter][index].x, hintPinPos[roundCounter][index].y),
-          1,
-        ),
+          new TPosition(
+            hintPinPos[roundCounter][index].x,
+            hintPinPos[roundCounter][index].y
+          ),
+          1
+        )
       );
 
       index++;
@@ -118,9 +126,12 @@ function TButtonCheckAnswer() {
     for (let i = 0; i < correct; i++) {
       hintPin[roundCounter].push(
         new THintPin(
-          new TPosition(hintPinPos[roundCounter][index].x, hintPinPos[roundCounter][index].y),
-          0,
-        ),
+          new TPosition(
+            hintPinPos[roundCounter][index].x,
+            hintPinPos[roundCounter][index].y
+          ),
+          0
+        )
       );
 
       index++;
@@ -142,7 +153,10 @@ function TButtonCheckAnswer() {
 }
 
 function TButtonNewGame() {
-  const pos = new TPosition(MastermindBoard.ButtonNewGame.x, MastermindBoard.ButtonNewGame.y);
+  const pos = new TPosition(
+    MastermindBoard.ButtonNewGame.x,
+    MastermindBoard.ButtonNewGame.y
+  );
   const spi = MastermindSheet.ButtonNewGame;
   const sp = new TSprite(imgSheet, spi, pos);
 
@@ -174,7 +188,10 @@ function TButtonNewGame() {
 }
 
 function TButtonCheat() {
-  const pos = new TPosition(MastermindBoard.ButtonCheat.x, MastermindBoard.ButtonCheat.y);
+  const pos = new TPosition(
+    MastermindBoard.ButtonCheat.x,
+    MastermindBoard.ButtonCheat.y
+  );
   const spi = MastermindSheet.ButtonCheat;
   const sp = new TSprite(imgSheet, spi, pos);
 
@@ -206,7 +223,7 @@ function TButtonCheat() {
 
 function TRoundPin() {
   const pinPos = Object.values(MastermindBoard.RoundPin);
-  const pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);
+  let pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);
   const spi = MastermindSheet.RoundPin;
   let sp = new TSprite(imgSheet, spi, pos);
 
@@ -218,13 +235,9 @@ function TRoundPin() {
     sp.setPos(new TPosition(aPos));
   };
 
-  //Fix this shit
   this.nextRound = function () {
-    const pinPos = Object.values(MastermindBoard.RoundPin);
-    const pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);
-    const spi = MastermindSheet.RoundPin;
-    sp = new TSprite(imgSheet, spi, pos);
-
+    pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);
+    sp.setPos(pos);
     drawGame();
   };
 }
@@ -242,7 +255,7 @@ function THintPin(aPos, index) {
 function TPanelHideAnswer() {
   const pos = new TPosition(
     MastermindBoard.PanelHideAnswer.x,
-    MastermindBoard.PanelHideAnswer.y,
+    MastermindBoard.PanelHideAnswer.y
   );
   const spi = MastermindSheet.PanelHideAnswer;
   const sp = new TSprite(imgSheet, spi, pos);
