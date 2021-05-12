@@ -1,8 +1,3 @@
-//--------------------------------------------------------------------------------------------------------------------
-//------ Variables, Constants and Objects
-//--------------------------------------------------------------------------------------------------------------------
-//Coordinates on the sprite-sheet
-
 const MastermindSheet = {
   Board: { x: 320, y: 0, w: 441, h: 640, count: 1 },
   ButtonNewGame: { x: 0, y: 45, w: 160, h: 45, count: 2 },
@@ -99,7 +94,7 @@ const MastermindBoard = {
     Blue: { x: 380, y: 179 },
     Brown: { x: 380, y: 248 },
     Green: { x: 380, y: 314 },
-    Orange: { x: 378, y: 379 },
+    Orange: { x: 379, y: 379 },
     Red: { x: 380, y: 448 },
     White: { x: 380, y: 513 },
     Yellow: { x: 380, y: 581 },
@@ -189,11 +184,11 @@ let roundPin = null;
 let hideAnswerPanel = null;
 
 //--------------------------------------------------------------------------------------------------------------------
-//------ Classes
+// ------ Classes
 //--------------------------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------------------------
-//------ Function and Events
+// ------ Function and Events
 //--------------------------------------------------------------------------------------------------------------------
 function addLogText(aText) {
   txtLog.innerHTML = aText + NewLine + txtLog.innerHTML;
@@ -205,22 +200,34 @@ function newGame() {
   roundCounter = 0;
   newGameCounter++;
 
-  colorButtonGuess.forEach((e) => {
-    e.forEach((a) => {
-      if (a) {
-        a.clearButtonGuess();
-      }
-    });
+  /* Using Object.values to add every ComputerAnswer x.y value to an array. */
+  const colorButtonAnswerPos = Object.values(MastermindBoard.ComputerAnswer);
+
+  colorButtonGuess.length = 0;
+
+  /* Clear the guess array.
+    push 10 new arrays containing 4 nulls (for future guesses) */
+  for (let i = 0; i < 10; i++) {
+    const row = [];
+
+    for (let j = 0; j < 4; j++) {
+      row.push(null);
+    }
+
+    colorButtonGuess.push(row);
+  }
+
+  hintPin.forEach((e) => {
+    e.length = 0;
   });
 
   for (let i = 0; i < 4; i++) {
-    const colorButtonAnswerPos = Object.values(MastermindBoard.ComputerAnswer);
-
+    /* Using for loop to push a new instance of TColorButton into the answer array */
     colorButtonAnswer.push(
       new TColorButtons(
         new TPosition(colorButtonAnswerPos[i].x, colorButtonAnswerPos[i].y),
-        Math.floor(Math.random() * 8),
-      ),
+        Math.floor(Math.random() * 8)
+      )
     );
   }
 
@@ -235,6 +242,7 @@ function drawGame() {
   buttonCheat.draw();
   roundPin.draw();
 
+  /* Loop through guesses, draw every button guess made */
   colorButtonGuess.forEach((e) => {
     e.forEach((a) => {
       if (a) {
@@ -247,6 +255,7 @@ function drawGame() {
     e.draw();
   });
 
+  /* Draw every white/black pin, only if needed */
   for (let i = 0; i < hintPin.length; i++) {
     for (let j = 0; j < hintPin[i].length; j++) {
       hintPin[i][j].draw();
@@ -260,6 +269,7 @@ function drawGame() {
   if (currentButton) {
     currentButton.draw();
   }
+
   hideAnswerPanel.draw();
 }
 
@@ -272,6 +282,7 @@ function setMousePos(aEvent) {
 function cvsMouseMove(aEvent) {
   setMousePos(aEvent);
 
+  // If you're not dragging a button
   if (!isDragging) {
     if (
       buttonCheckAnswer.isMouseOver(mousePos) ||
@@ -285,22 +296,23 @@ function cvsMouseMove(aEvent) {
 
     currentButton = null;
 
-    colorButtonGuess.forEach((e) => {
-      e.forEach((a) => {
-        if (a !== null && a.isMouseOver(mousePos)) {
-          currentButton = a;
-          cvs.style.cursor = 'grab';
-        }
-      });
+    // Checks if there is a button in snap position (guesses) on said round
+    colorButtonGuess[roundCounter].forEach((a) => {
+      // If snap position is not null, and mouse is over a button, make currentbutton said button
+      if (a !== null && a.isMouseOver(mousePos)) {
+        currentButton = a;
+        cvs.style.cursor = 'grab';
+      }
     });
 
+    // Checks which color button the mouse is over, and change currentButton to said button
     for (let i = 0; i < colorButtons.length; i++) {
       if (colorButtons[i].isMouseOver(mousePos)) {
         cvs.style.cursor = 'grab';
         currentButton = colorButtons[i];
-        return;
       }
     }
+    // If you're draggin a button
   } else if (currentButton) {
     currentButton.dragging(mousePos);
     drawGame();
@@ -308,7 +320,7 @@ function cvsMouseMove(aEvent) {
 }
 
 function cvsMouseDown() {
-  console.log(mousePos);
+  // Check which menu button mouse is over
   if (buttonCheckAnswer.isMouseOver(mousePos)) {
     buttonCheckAnswer.down();
   } else if (buttonNewGame.isMouseOver(mousePos)) {
@@ -317,24 +329,39 @@ function cvsMouseDown() {
     buttonCheat.down();
   }
 
+  // CHANGE?
+  // Check if currentButton is on the right of canvas (only true on colorButtons)
   if (currentButton && mousePos.x > cvs.width - 100) {
-    currentButton = new TColorButtons(currentButton.getPos(), currentButton.getIndex());
+    // Set the scale of currentButton to 0, making it dissapear;
+    currentButton.setScale({ x: 0, y: 0 });
+
+    // Create a NEW button on top of the old one, and start dragging new button
+    currentButton = new TColorButtons(
+      currentButton.getPos(),
+      currentButton.getIndex()
+    );
     currentButton.startDrag();
     cvs.style.cursor = 'grabbing';
     isDragging = true;
-  } else if (currentButton !== null) {
+  } else if (currentButton) {
+    // Check which button guess the mouse is over, replace snap position with null
     for (let i = 0; i < 10; i += 1) {
       for (let j = 0; j < 4; j += 1) {
         if (
-          currentButton.getPos().x < snapPositions[i][j].x + MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().x > snapPositions[i][j].x - MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().y < snapPositions[i][j].y + MastermindSheet.ColorPicker.h &&
-          currentButton.getPos().y > snapPositions[i][j].y - MastermindSheet.ColorPicker.h
+          currentButton.getPos().x <
+            snapPos[i][j].x + MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().x >
+            snapPos[i][j].x - MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().y <
+            snapPos[i][j].y + MastermindSheet.ColorPicker.h &&
+          currentButton.getPos().y >
+            snapPos[i][j].y - MastermindSheet.ColorPicker.h
         ) {
           colorButtonGuess[i][j] = null;
         }
       }
     }
+
     currentButton.startDrag();
     cvs.style.cursor = 'grabbing';
     isDragging = true;
@@ -355,19 +382,30 @@ function cvsMouseUp() {
 
   if (currentButton) {
     currentButton.drop();
-    for (let i = 0; i < 10; i += 1) {
-      for (let j = 0; j < 4; j += 1) {
-        if (
-          currentButton.getPos().x < snapPositions[i][j].x + MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().x > snapPositions[i][j].x - MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().y < snapPositions[i][j].y + MastermindSheet.ColorPicker.h &&
-          currentButton.getPos().y > snapPositions[i][j].y - MastermindSheet.ColorPicker.h
-        ) {
-          colorButtonGuess[i][j] = currentButton;
-        }
+
+    // Place currentButton in snap position if snapping is true
+    for (let j = 0; j < 4; j += 1) {
+      if (
+        currentButton.getPos().x <
+          snapPos[roundCounter][j].x + MastermindSheet.ColorPicker.w &&
+        currentButton.getPos().x >
+          snapPos[roundCounter][j].x - MastermindSheet.ColorPicker.w &&
+        currentButton.getPos().y <
+          snapPos[roundCounter][j].y + MastermindSheet.ColorPicker.h &&
+        currentButton.getPos().y >
+          snapPos[roundCounter][j].y - MastermindSheet.ColorPicker.h
+      ) {
+        colorButtonGuess[roundCounter][j] = currentButton;
       }
     }
+
+    // Set the scale of every color button back to 1
+    for (let i = 0; i < colorButtons.length; i++) {
+      colorButtons[i].setScale({ x: 1, y: 1 });
+    }
+
     currentButton = null;
+
     cvs.style.cursor = 'grab';
     isDragging = false;
     drawGame();
@@ -383,54 +421,61 @@ function loadGame() {
   buttonCheat = new TButtonCheat();
   roundPin = new TRoundPin();
   hideAnswerPanel = new TPanelHideAnswer();
+
   newGame();
 }
 
 //--------------------------------------------------------------------------------------------------------------------
-//------ Main Code
+// ------ Main Code
 //--------------------------------------------------------------------------------------------------------------------
 imgSheet.addEventListener('load', loadGame);
 imgSheet.src = 'SpriteSheet_MM.png';
 cvs.addEventListener('mousemove', cvsMouseMove);
 cvs.addEventListener('mousedown', cvsMouseDown);
 cvs.addEventListener('mouseup', cvsMouseUp);
-document.addEventListener('contextmenu', (aEvent) => aEvent.preventDefault());
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 const colorButtons = [];
 const colorButtonGuess = [];
 const colorButtonAnswer = [];
 const hintPin = [];
-const snapPositions = [];
-const hintPinPos = [];
+
+// Adds different positions
+const snapPos = Object.values(MastermindBoard.ColorAnswer);
+const pinPos = Object.values(MastermindBoard.RoundPin);
+const hintPinPos = Object.values(MastermindBoard.HintPin);
 
 let isDragging = false;
 let currentButton = null;
 let roundCounter = 0;
 let newGameCounter = 1;
+let tempAnswer = [];
 
+// Sounds
+const clock = new Audio('Sounds/clock.mp3');
+const move = new Audio('Sounds/move1.mp3');
+const drop = new Audio('Sounds/chessDrop.mp3');
+
+drop.volume = 0.5;
+clock.loop = true;
+
+// Add the 8 different color buttons
 for (let i = 0; i < 8; i++) {
+  // Object.values adds the coordinates in MastermindBoard.ColorPicker to an array, allowing a loop to run through
   const colorPickerPos = Object.values(MastermindBoard.ColorPicker);
 
-  colorButtons[i] = new TColorButtons({ ...colorPickerPos[i] }, i);
+  colorButtons[i] = new TColorButtons(colorPickerPos[i], i);
 }
 
+// Prepare 10 rows of hint pins
 for (let i = 0; i < 10; i++) {
   hintPin.push([]);
 }
 
+// add 10 (rounds) arrays with 4 (guesses) nulls in each
 for (let i = 0; i < 10; i++) {
   colorButtonGuess.push([]);
   for (let j = 0; j < 4; j++) {
     colorButtonGuess[i].push(null);
   }
-}
-
-for (const [aRow, aPos] of Object.entries(MastermindBoard.ColorAnswer)) {
-  snapPositions.push(aPos);
-}
-
-const pinPos = Object.values(MastermindBoard.RoundPin);
-
-for (const [aRow, aPos] of Object.entries(MastermindBoard.HintPin)) {
-  hintPinPos.push(aPos);
 }

@@ -1,27 +1,24 @@
 function TColorButtons(newPos, index) {
   let pos = { ...newPos };
-  let deltaPos = new TPosition(0, 0);
+  let deltaPos = new TPosition(120, 120);
   let startDrag = false;
   let initPos = pos;
+  let isSnapped = false;
+  let time = 100;
+  let a;
+
+  let snapOnce = true;
+
   const radius = 15;
   const spi = MastermindSheet.ColorPicker;
   const sp = new TSprite(imgSheet, spi, pos, index);
 
-  this.clearButtonGuess = function () {
-    colorButtonGuess.length = 0;
-
-    for (let i = 0; i < 10; i++) {
-      const row = [];
-
-      for (let j = 0; j < 4; j++) {
-        row.push(null);
-      }
-      colorButtonGuess.push(row);
-    }
-  };
-
   this.draw = function () {
     sp.draw();
+  };
+
+  this.isSnapped = function () {
+    return isSnapped;
   };
 
   this.getPos = function () {
@@ -34,17 +31,22 @@ function TColorButtons(newPos, index) {
 
   this.isMouseOver = function (aPos) {
     const delta = Math.sqrt(
-      Math.pow(aPos.x - pos.x - spi.w / 1.5, 2) + Math.pow(aPos.y - pos.y - spi.h / 1.5, 2),
+      Math.pow(aPos.x - pos.x - spi.w / 1.5, 2) +
+        Math.pow(aPos.y - pos.y - spi.h / 1.5, 2)
     );
     return delta <= radius;
   };
 
   this.startDrag = function () {
+    if (clock.paused) {
+      clock.play();
+    }
     startDrag = true;
   };
 
   this.dragging = function (aPos) {
     if (startDrag) {
+      move.play();
       pos = new TPosition(aPos.x, aPos.y);
       deltaPos.x = pos.x - initPos.x;
       deltaPos.y = pos.y - initPos.y;
@@ -57,6 +59,10 @@ function TColorButtons(newPos, index) {
     checkSnapping();
   };
 
+  this.setScale = function (aScale) {
+    sp.setScale(aScale);
+  };
+
   this.drop = function () {
     if (checkSnapping()) {
       initPos.x = pos.x;
@@ -67,21 +73,33 @@ function TColorButtons(newPos, index) {
       pos = { ...newPos };
       sp.setPos({ ...newPos });
     }
+    snapOnce = true;
+    drop.play();
   };
 
   function checkSnapping() {
+    /* Snaps into place if within 25px */
     const snap = 25;
 
-    for (let i = 0; i < snapPositions[roundCounter].length; i++) {
-      const snapPos = snapPositions[roundCounter][i];
+    // Only snap guess position for current round
+    for (let i = 0; i < snapPos[roundCounter].length; i++) {
+      const snapPoss = snapPos[roundCounter][i];
 
-      const delta = Math.sqrt(Math.pow(snapPos.x - pos.x, 2) + Math.pow(snapPos.y - pos.y, 2));
+      const delta = Math.sqrt(
+        Math.pow(snapPoss.x - pos.x, 2) + Math.pow(snapPoss.y - pos.y, 2)
+      );
+
+      // If button is within 25px, snap into position
 
       if (delta <= snap) {
-        pos.x = snapPos.x;
-        pos.y = snapPos.y;
+        a = new Date().getTime() + time;
 
+        pos.x = snapPoss.x;
+        pos.y = snapPoss.y;
+        isSnapped = true;
         return true;
+      } else {
+        isSnapped = false;
       }
     }
   }
