@@ -3,6 +3,7 @@ function TButtonCheckAnswer() {
     MastermindBoard.ButtonCheckAnswer.x,
     MastermindBoard.ButtonCheckAnswer.y
   );
+
   const spi = MastermindSheet.ButtonCheckAnswer;
   const sp = new TSprite(imgSheet, spi, pos);
 
@@ -25,10 +26,15 @@ function TButtonCheckAnswer() {
     sp.setIndex(1);
   };
 
+  this.setIndex = function (a) {
+    sp.setIndex(a);
+  };
+
   this.up = function () {
     // Checks if currentGuess is filled, if not, let the player know
     if (colorButtonGuess[roundCounter].includes(null)) {
       let missingGuesses = 0;
+
       colorButtonGuess[roundCounter].forEach((e) => {
         if (!e) {
           missingGuesses++;
@@ -40,13 +46,20 @@ function TButtonCheckAnswer() {
       } else {
         addLogText(`Please fill in ${missingGuesses} more buttons.`);
       }
+
       sp.setIndex(0);
     } else {
       checkGuess();
-      drawGame();
       roundCounter++;
-      addLogText(`Answer checked! Round ${roundCounter + 1}`);
+      drawGame();
       sp.setIndex(0);
+
+      if (roundCounter === 10) {
+        gameMode = GameStatus.gameOver;
+        addLogText(`Game over!`);
+      } else {
+        addLogText(`Answer checked! Round ${roundCounter + 1}`);
+      }
     }
   };
 
@@ -54,6 +67,7 @@ function TButtonCheckAnswer() {
     /* Keep track of perfect (correct color and position),
     and correct (correct color but wrong position),
     Index to keep track of the pin order */
+
     let perfect = 0;
     let correct = 0;
     let index = 0;
@@ -98,9 +112,10 @@ function TButtonCheckAnswer() {
           }
         }
       }
+
       /* Explanation:
          1: If guess 1 match answer 1, perfect++ and remove said answer from tempAnswer. 
-         2: If guess 1 dont match answer 1, check if guess 1 match answer 2, 3 or 4
+         2: If guess 1 don't match answer 1, check if guess 1 match answer 2, 3 or 4
          3: If guess 1 match answer 3, check if answer 3 match guess 3.
          4: If guess 3 match answer 3, perfect++ and set answer 3 to null.
          5: If guess 3 don't match answer 3, correct++ and set answer 3 to null. */
@@ -143,7 +158,16 @@ function TButtonCheckAnswer() {
 
     /* If all 4 guesses are correct, WIN! */
     if (perfect === 4) {
+      cvs.style.cursor = '';
       alert('WINNER');
+      gameMode = GameStatus.gameWin;
+
+      buttonCheckAnswer.setIndex(0);
+      clock.pause();
+      document
+        .getElementById('fireworkButton')
+        .setAttribute('style', 'display: show');
+      startFirework();
     }
 
     index = 0;
@@ -178,6 +202,10 @@ function TButtonNewGame() {
 
   this.down = function () {
     sp.setIndex(1);
+  };
+
+  this.setIndex = function (a) {
+    sp.setIndex(a);
   };
 
   this.up = function () {
@@ -215,6 +243,10 @@ function TButtonCheat() {
     sp.setIndex(1);
   };
 
+  this.setIndex = function (a) {
+    sp.setIndex(a);
+  };
+
   this.up = function () {
     sp.setIndex(0);
     hideAnswerPanel.setVisible(false);
@@ -223,7 +255,7 @@ function TButtonCheat() {
 
 function TRoundPin() {
   const pinPos = Object.values(MastermindBoard.RoundPin);
-  let pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);
+  let pos = new TPosition(pinPos[0].x, pinPos[0].y);
   const spi = MastermindSheet.RoundPin;
   let sp = new TSprite(imgSheet, spi, pos);
 
@@ -231,14 +263,18 @@ function TRoundPin() {
     sp.draw();
   };
 
-  this.changePos = function (aPos) {
-    sp.setPos(new TPosition(aPos));
-  };
+  this.nextRound = async function () {
+    if (gameMode === GameStatus.gameRunning) {
+      let newPos = new TPosition(
+        pinPos[roundCounter].x,
+        pinPos[roundCounter].y
+      );
 
-  this.nextRound = function () {
-    pos = new TPosition(pinPos[roundCounter].x, pinPos[roundCounter].y);
-    sp.setPos(pos);
-    drawGame();
+      let a = (pos.y - newPos.y) / 10;
+
+      sp.setPos({ x: pos.x, y: newPos.y });
+      drawGame();
+    }
   };
 }
 

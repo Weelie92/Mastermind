@@ -100,5 +100,6 @@ function TSprite(aSheet, aSpriteInfo, aPos, aIndex = 0, aRow = 0) {
 
   this.setPos = function (aPos) {
     pos = aPos;
+    this.draw();
   };
 }
