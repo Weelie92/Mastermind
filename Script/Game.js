@@ -249,10 +249,9 @@ function newGame() {
   /* Using Object.values to add every ComputerAnswer x.y value to an array. */
   const colorButtonAnswerPos = Object.values(MastermindBoard.ComputerAnswer);
 
-  colorButtonGuess.length = 0;
-
   /* Clear the guess array.
   push 10 new arrays containing 4 nulls (for future guesses) */
+  colorButtonGuess.length = 0;
 
   for (let i = 0; i < 10; i++) {
     const row = [];
@@ -315,9 +314,7 @@ function drawGame() {
 
   hideAnswerPanel.draw();
 
-  if (currentButton) {
-    currentButton.draw();
-  }
+  if (currentButton) currentButton.draw();
 
   for (let i = 0; i < fireworkFire.length; i++) {
     fireworkFire[i].draw();
@@ -341,50 +338,45 @@ function setMousePos(aEvent) {
 function cvsMouseMove(aEvent) {
   setMousePos(aEvent);
 
-  /* If you're not dragging a button */
+  /* If you're dragging a button */
+  if (isDragging) {
+    currentButton.dragging(mousePos);
+    drawGame();
+    return;
+  }
 
-  if (!isDragging) {
-    if (buttonNewGame.isMouseOver(mousePos)) {
+  /* If you're not dragging a button */
+  if (buttonNewGame.isMouseOver(mousePos)) cvs.style.cursor = 'pointer';
+
+  if (gameMode === GameStatus.gameRunning) {
+    if (
+      buttonNewGame.isMouseOver(mousePos) ||
+      buttonCheckAnswer.isMouseOver(mousePos) ||
+      buttonCheat.isMouseOver(mousePos)
+    ) {
       cvs.style.cursor = 'pointer';
     } else {
       cvs.style.cursor = '';
     }
 
-    if (gameMode === GameStatus.gameRunning) {
-      if (
-        buttonNewGame.isMouseOver(mousePos) ||
-        buttonCheckAnswer.isMouseOver(mousePos) ||
-        buttonCheat.isMouseOver(mousePos)
-      ) {
-        cvs.style.cursor = 'pointer';
-      } else {
-        cvs.style.cursor = '';
+    currentButton = null;
+
+    /* Checks if there is a button in snap position (guesses) on said round */
+    colorButtonGuess[roundCounter].forEach((a) => {
+      /* If snap position is not null, and mouse is over a button, make current button said button */
+      if (a !== null && a.isMouseOver(mousePos)) {
+        currentButton = a;
+        cvs.style.cursor = 'grab';
       }
+    });
 
-      currentButton = null;
-
-      /* Checks if there is a button in snap position (guesses) on said round */
-      colorButtonGuess[roundCounter].forEach((a) => {
-        /* If snap position is not null, and mouse is over a button, make currentbutton said button */
-        if (a !== null && a.isMouseOver(mousePos)) {
-          currentButton = a;
-          cvs.style.cursor = 'grab';
-        }
-      });
-
-      /* Checks which color button the mouse is over, and change currentButton to said button */
-      for (let i = 0; i < colorButtons.length; i++) {
-        if (colorButtons[i].isMouseOver(mousePos)) {
-          cvs.style.cursor = 'grab';
-          currentButton = colorButtons[i];
-        }
+    /* Checks which color button the mouse is over, and change currentButton to said button */
+    for (let i = 0; i < colorButtons.length; i++) {
+      if (colorButtons[i].isMouseOver(mousePos)) {
+        cvs.style.cursor = 'grab';
+        currentButton = colorButtons[i];
       }
     }
-
-    /* If you're dragging a button */
-  } else if (currentButton) {
-    currentButton.dragging(mousePos);
-    drawGame();
   }
 }
 
@@ -396,11 +388,8 @@ function cvsMouseDown() {
 
   /* Check if currentButton is on the right of canvas (only true on colorButtons) */
   if (gameMode === GameStatus.gameRunning) {
-    if (buttonCheckAnswer.isMouseOver(mousePos)) {
-      buttonCheckAnswer.down();
-    } else if (buttonCheat.isMouseOver(mousePos)) {
-      buttonCheat.down();
-    }
+    if (buttonCheckAnswer.isMouseOver(mousePos)) buttonCheckAnswer.down();
+    if (buttonCheat.isMouseOver(mousePos)) buttonCheat.down();
 
     if (currentButton && mousePos.x > cvs.width - 100) {
       /* Set the scale of currentButton to 0, making it disappear */
@@ -415,28 +404,31 @@ function cvsMouseDown() {
       currentButton.startDrag();
       cvs.style.cursor = 'grabbing';
       isDragging = true;
-    } else if (currentButton) {
+      return;
+    }
+
+    if (currentButton) {
       /* Check which button guess the mouse is over, replace snap position with null */
-      for (let i = 0; i < 10; i += 1) {
-        for (let j = 0; j < 4; j += 1) {
-          if (
-            currentButton.getPos().x <
-              snapPos[i][j].x + MastermindSheet.ColorPicker.w &&
-            currentButton.getPos().x >
-              snapPos[i][j].x - MastermindSheet.ColorPicker.w &&
-            currentButton.getPos().y <
-              snapPos[i][j].y + MastermindSheet.ColorPicker.h &&
-            currentButton.getPos().y >
-              snapPos[i][j].y - MastermindSheet.ColorPicker.h
-          ) {
-            colorButtonGuess[i][j] = null;
-          }
+
+      for (let j = 0; j < 4; j += 1) {
+        if (
+          currentButton.getPos().x <
+            snapPos[roundCounter][j].x + MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().x >
+            snapPos[roundCounter][j].x - MastermindSheet.ColorPicker.w &&
+          currentButton.getPos().y <
+            snapPos[roundCounter][j].y + MastermindSheet.ColorPicker.h &&
+          currentButton.getPos().y >
+            snapPos[roundCounter][j].y - MastermindSheet.ColorPicker.h
+        ) {
+          colorButtonGuess[roundCounter][j] = null;
         }
       }
 
       currentButton.startDrag();
       cvs.style.cursor = 'grabbing';
       isDragging = true;
+      return;
     }
   }
 
@@ -447,47 +439,49 @@ function cvsMouseUp() {
   if (buttonNewGame.isMouseOver(mousePos)) {
     buttonNewGame.up();
     roundPin.nextRound();
+    return;
   }
 
   if (gameMode === GameStatus.gameRunning) {
     if (buttonCheckAnswer.isMouseOver(mousePos)) {
       buttonCheckAnswer.up();
       roundPin.nextRound();
-    } else if (buttonCheat.isMouseOver(mousePos)) {
+      return;
+    }
+    if (buttonCheat.isMouseOver(mousePos)) {
       buttonCheat.up();
+      return;
     }
 
-    if (currentButton) {
-      currentButton.drop();
+    currentButton.drop();
 
-      /* Place currentButton in snap position if snapping is true */
-      for (let j = 0; j < 4; j += 1) {
-        if (
-          currentButton.getPos().x <
-            snapPos[roundCounter][j].x + MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().x >
-            snapPos[roundCounter][j].x - MastermindSheet.ColorPicker.w &&
-          currentButton.getPos().y <
-            snapPos[roundCounter][j].y + MastermindSheet.ColorPicker.h &&
-          currentButton.getPos().y >
-            snapPos[roundCounter][j].y - MastermindSheet.ColorPicker.h &&
-          currentButton.isSnapped()
-        ) {
-          colorButtonGuess[roundCounter][j] = currentButton;
-        }
+    /* Place currentButton in snap position if snapping is true */
+    for (let j = 0; j < 4; j += 1) {
+      if (
+        currentButton.getPos().x <
+          snapPos[roundCounter][j].x + MastermindSheet.ColorPicker.w &&
+        currentButton.getPos().x >
+          snapPos[roundCounter][j].x - MastermindSheet.ColorPicker.w &&
+        currentButton.getPos().y <
+          snapPos[roundCounter][j].y + MastermindSheet.ColorPicker.h &&
+        currentButton.getPos().y >
+          snapPos[roundCounter][j].y - MastermindSheet.ColorPicker.h &&
+        currentButton.isSnapped()
+      ) {
+        colorButtonGuess[roundCounter][j] = currentButton;
       }
-
-      /* Set the scale of every color button back to 1 */
-      for (let i = 0; i < colorButtons.length; i++) {
-        colorButtons[i].grow();
-      }
-
-      currentButton = null;
-
-      cvs.style.cursor = 'grab';
-      isDragging = false;
-      drawGame();
     }
+
+    /* Set the scale of every color button back to 1 */
+    for (let i = 0; i < colorButtons.length; i++) {
+      colorButtons[i].grow();
+    }
+
+    currentButton = null;
+
+    cvs.style.cursor = '';
+    isDragging = false;
+    drawGame();
   }
 
   buttonCheckAnswer.setIndex(0);
@@ -522,6 +516,7 @@ function loadGame() {
   buttonNewGame = new TButtonNewGame();
   buttonCheat = new TButtonCheat();
   roundPin = new TRoundPin();
+
   hideAnswerPanel = new TPanelHideAnswer();
 
   newGame();
